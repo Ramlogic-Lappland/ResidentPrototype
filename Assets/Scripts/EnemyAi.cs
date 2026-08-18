@@ -6,6 +6,7 @@ public class EnemyAi : MonoBehaviour
     [Header("References")]
     [SerializeField] private NavMeshAgent navAgent;
     [SerializeField] private Transform playerTransform;
+    [SerializeField] private Transform zombieTransform;
     [SerializeField] private Transform firePoint;
     [SerializeField] private GameObject projectilePrefab;
 
@@ -23,9 +24,9 @@ public class EnemyAi : MonoBehaviour
 
     [Header("Combat Settings")]
     [SerializeField] private float attackCooldown = 1f;
-    private bool _isOnAttackCooldown;
     [SerializeField] private float forwardShotForce = 10f;
     [SerializeField] private float verticalShotForce = 5f;
+    private bool _isOnAttackCooldown;
 
 
     [Header("Detection Ranges")]
@@ -62,7 +63,24 @@ public class EnemyAi : MonoBehaviour
         UpdateBehaviourState();
     }
 
+    private void UpdateBehaviourState()
+    {
+        if (!_isPlayerVisible && !_isPlayerInRange)
+        {
+            PerformPatrol();
+        }
+        else if (_isPlayerVisible && !_isPlayerInRange)
+        {
+            PerformChase();
+        }
+        else if (_isPlayerVisible && _isPlayerInRange)
+        {
+            PerformAttack();
+        }
+    }
 
+    #region MovementLogic
+    
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
@@ -72,13 +90,51 @@ public class EnemyAi : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, visionRange);
     }
+    
+    private void FindPatrolPoint()
+    {
+        float randomX = Random.Range(-patrolRadius, patrolRadius);
+        float randomZ = Random.Range(-patrolRadius, patrolRadius);
 
 
+        Vector3 potentialPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
+
+
+        if (Physics.Raycast(potentialPoint, -transform.up, 2f, terrainLayer))
+        {
+            _currentPatrolPoint = potentialPoint;
+            _hasPatrolPoint = true;
+        }
+    }
+    
+    private void PerformPatrol()
+    {
+        if (!_hasPatrolPoint)
+            FindPatrolPoint();
+
+
+        if (_hasPatrolPoint)
+            navAgent.SetDestination(_currentPatrolPoint);
+
+
+        if (Vector3.Distance(zombieTransform.position, _currentPatrolPoint) < 1f)
+            _hasPatrolPoint = false;
+    }
+    
     private void DetectPlayer()
     {
         _isPlayerVisible = Physics.CheckSphere(transform.position, visionRange, playerLayerMask);
         _isPlayerInRange = Physics.CheckSphere(transform.position, engagementRange, playerLayerMask);
     }
+    
+    private void PerformChase()
+    {
+        if (playerTransform != null)
+        {
+            navAgent.SetDestination(playerTransform.position);
+        }
+    }
+    #endregion
 
 
     private void FireProjectile()
@@ -95,56 +151,12 @@ public class EnemyAi : MonoBehaviour
     }
 
 
-    private void FindPatrolPoint()
-    {
-        float randomX = Random.Range(-patrolRadius, patrolRadius);
-        float randomZ = Random.Range(-patrolRadius, patrolRadius);
-
-
-        Vector3 potentialPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
-
-
-        if (Physics.Raycast(potentialPoint, -transform.up, 2f, terrainLayer))
-        {
-            _currentPatrolPoint = potentialPoint;
-            _hasPatrolPoint = true;
-        }
-    }
-
-
     private IEnumerator AttackCooldownRoutine()
     {
         _isOnAttackCooldown = true;
         yield return new WaitForSeconds(attackCooldown);
         _isOnAttackCooldown = false;
     }
-
-
-
-
-    private void PerformPatrol()
-    {
-        if (!_hasPatrolPoint)
-            FindPatrolPoint();
-
-
-        if (_hasPatrolPoint)
-            navAgent.SetDestination(_currentPatrolPoint);
-
-
-        if (Vector3.Distance(transform.position, _currentPatrolPoint) < 1f)
-            _hasPatrolPoint = false;
-    }
-
-
-    private void PerformChase()
-    {
-        if (playerTransform != null)
-        {
-            navAgent.SetDestination(playerTransform.position);
-        }
-    }
-
 
     private void PerformAttack()
     {
@@ -159,25 +171,8 @@ public class EnemyAi : MonoBehaviour
 
         if (!_isOnAttackCooldown)
         {
-            FireProjectile();
-            StartCoroutine(AttackCooldownRoutine());
-        }
-    }
-
-
-    private void UpdateBehaviourState()
-    {
-        if (!_isPlayerVisible && !_isPlayerInRange)
-        {
-            PerformPatrol();
-        }
-        else if (_isPlayerVisible && !_isPlayerInRange)
-        {
-            PerformChase();
-        }
-        else if (_isPlayerVisible && _isPlayerInRange)
-        {
-            PerformAttack();
+            //FireProjectile();
+            //StartCoroutine(AttackCooldownRoutine());
         }
     }
 
