@@ -698,7 +698,7 @@ MonoBehaviour:
   attackCooldown: 0
   forwardShotForce: 0
   verticalShotForce: 0
-  visionRange: 8
+  visionRange: 16
   engagementRange: 1
 --- !u!1 &374897335
 GameObject:

@@ -7,15 +7,17 @@ public class CameraSwitcher : MonoBehaviour
     [SerializeField] private Transform Player;
     [SerializeField] private CinemachineVirtualCameraBase activeCamera;
     [SerializeField] private CinemachineBrain brain;
+    
     [Header("Blend Settings")]
     [SerializeField] private bool doesItBlend;
+    private static bool _previousCameraState = true;
     
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            if (doesItBlend == true)
+            if (doesItBlend == true && _previousCameraState == true)
             {
                 brain.DefaultBlend.Style = CinemachineBlendDefinition.Styles.EaseIn;
             }
@@ -24,6 +26,7 @@ public class CameraSwitcher : MonoBehaviour
                 brain.DefaultBlend.Style = CinemachineBlendDefinition.Styles.Cut;
             }
             activeCamera.Priority = 1;
+            _previousCameraState = doesItBlend;
         }
     }
     
@@ -31,9 +34,7 @@ public class CameraSwitcher : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            
             activeCamera.Priority = 0;
-            
         }
     }
 }
